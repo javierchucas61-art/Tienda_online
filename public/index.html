@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover" />
+  <title>Tienda Online · Motupe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #f7f3ed; color: #2d2a24; padding: 0.8rem; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .store-container { max-width: 1200px; width: 100%; margin: 0 auto; }
+    
+    .header { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background: rgba(255, 255, 255, 0.97); backdrop-filter: blur(16px); border-bottom: 1px solid #e0d6cc; padding: 0 12px; box-shadow: 0 2px 20px rgba(0,0,0,0.04); }
+    .navbar { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+    .logo h1 { font-size: 1.3rem; font-weight: 600; color: #4a3729; }
+    .logo span { background: #b48b6f; color: white; padding: 0.1rem 0.6rem; border-radius: 40px; font-size: 0.7rem; margin-left: 4px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    
+    .cart-icon { position: relative; font-size: 1.4rem; cursor: pointer; background: #e5d6c8; padding: 0.3rem 0.8rem; border-radius: 40px; transition: 0.25s; min-width: 48px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+    .cart-icon:hover { background: #d4bfae; transform: scale(1.02); }
+    .cart-badge { background: #b22222; color: white; border-radius: 50%; padding: 0.1rem 0.4rem; font-size: 0.7rem; font-weight: bold; position: absolute; top: -4px; right: -4px; min-width: 20px; text-align: center; }
+    
+    .header-spacer { height: 72px; }
+    .delivery-zone { background: #e2d4c6; padding: 0.4rem 1rem; border-radius: 60px; font-weight: 500; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; margin: 0.3rem 0 0.8rem 0; border: 1px solid #cbb7a4; flex-wrap: wrap; width: 100%; justify-content: center; }
+    
+    .categories-dropdown { position: relative; display: inline-block; margin: 0.3rem 0 1rem 0; width: 100%; max-width: 280px; }
+    .categories-dropdown-btn { background: #4f3625; color: white; padding: 0.7rem 1.2rem; border: none; border-radius: 60px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; }
+    .categories-dropdown-btn .arrow { transition: transform 0.3s; margin-left: auto; }
+    .categories-dropdown-btn .arrow.open { transform: rotate(180deg); }
+    .categories-dropdown-content { display: none; position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: white; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid #dccfc2; overflow: hidden; z-index: 100; }
+    .categories-dropdown-content.open { display: block; }
+    .category-item { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1.2rem; cursor: pointer; font-weight: 500; color: #3d2e1f; border: none; background: none; width: 100%; text-align: left; font-size: 0.9rem; }
+    .category-item:hover { background: #f3ebe3; }
+    .category-item.active { background: #4f3625; color: white; }
+
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem; margin: 1rem 0 2rem; }
+    .product-card { background: #fffcf9; border-radius: 24px; padding: 1.2rem 0.8rem 1.4rem; box-shadow: 0 8px 20px rgba(80, 60, 40, 0.06); border: 1px solid #ede4db; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(70, 50, 30, 0.12); }
+    .product-card.hidden { display: none; }
+    .product-image { width: 140px; height: 140px; border-radius: 60px; object-fit: cover; background: #f1e7df; margin-bottom: 0.6rem; }
+    .product-title { font-size: 1.1rem; font-weight: 600; }
+    .product-descripcion { font-size: 0.78rem; color: #5a4a3a; margin: 0.2rem 0; padding: 0 0.3rem; }
+    .product-price { font-size: 1.3rem; font-weight: 700; color: #4f3625; margin: 0.2rem 0 0.4rem; }
+    .product-stock { font-size: 0.75rem; font-weight: 600; margin: 0.2rem 0 0.4rem; padding: 0.2rem 0.8rem; border-radius: 30px; }
+    .in-stock { color: #2e7d32; background: #e8f5e9; }
+    .low-stock { color: #e67e22; background: #fff3e0; }
+    .out-of-stock { color: #b22222; background: #fce4ec; }
+    .btn-add { background: #4f3625; border: none; color: white; font-weight: 600; padding: 0.6rem 1.2rem; border-radius: 60px; font-size: 0.9rem; cursor: pointer; width: 100%; max-width: 180px; margin-top: 0.4rem; min-height: 44px; transition: 0.25s; }
+    .btn-add:hover { background: #2f1f13; transform: scale(1.03); }
+    .btn-add:disabled { background: #999 !important; cursor: not-allowed; }
+    
+    /* NOTIFICACIONES FLOTANTES */
+    .notification-container { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px; width: 100%; pointer-events: none; }
+    .notification { background: white; border-radius: 16px; padding: 1rem 1.2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: flex; gap: 12px; border-left: 5px solid #4f3625; transform: translateX(120%); opacity: 0; transition: all 0.3s; pointer-events: auto; }
+    .notification.show { transform: translateX(0); opacity: 1; }
+    .notification.success { border-left-color: #2e7d32; }
+    .notification.error { border-left-color: #d32f2f; }
+    .notification.info { border-left-color: #1565c0; }
+
+    .footer { border-top: 1px solid #e0d6cc; background: wheat; padding: 30px 16px; margin-top: 2rem; text-align: center; width: 100%; border-radius: 24px 24px 0 0;}
+    
+    @media (min-width: 600px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 900px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1200px) { .products-grid { grid-template-columns: repeat(4, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="store-container">
+    <header class="header">
+      <nav class="navbar">
+        <div class="logo">
+         <img src="icono.png" alt="Logo" style="width:50px;height:50px;border-radius:50%;border:2px solid #b48b6f;" onerror="this.style.display='none'" />
+         <h1>Motupe <span>delivery</span></h1>
+        </div>
+        <div class="header-actions">
+          <div class="cart-icon" id="cartIcon">
+            <i class="fas fa-shopping-bag"></i>
+            <span class="cart-badge" id="cartBadge">0</span>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <div class="header-spacer"></div>
+
+    <div class="delivery-zone">
+      <i class="fas fa-truck"></i> Entrega en: Motupe · Chochope · Lindero · Sonolipe · Jayanca
+    </div>
+
+    <div class="categories-dropdown">
+      <button class="categories-dropdown-btn" id="categoriesDropdownBtn">
+        <i class="fas fa-bars"></i>
+        <span id="selectedCategoryText">Todas las categorías</span>
+        <i class="fas fa-chevron-down arrow" id="dropdownArrow"></i>
+      </button>
+      <div class="categories-dropdown-content" id="categoriesDropdownContent"></div>
+    </div>
+
+    <div class="products-grid" id="productList"></div>
+
+    <footer class="footer">
+      <p>© <span id="year"></span> Javier Chucas & Adriano Quiroz. Todos los derechos reservados.</p>
+    </footer>
+  </div>
+
+  <!-- 🟢 SOCKET.IO PARA NOTIFICACIONES EN TIENDA -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    (function() {
+      function showNotification(title, msg, type = 'success') {
+        let c = document.getElementById('noti-container');
+        if (!c) { c = document.createElement('div'); c.id = 'noti-container'; c.className = 'notification-container'; document.body.appendChild(c); }
+        const n = document.createElement('div'); n.className = 'notification ' + type;
+        const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+        n.innerHTML = `<span style="font-size:1.5rem">${icons[type]}</span><div><b style="font-size:.9rem">${title}</b><br><span style="font-size:.8rem;color:#555">${msg}</span></div>`;
+        c.appendChild(n); setTimeout(() => n.classList.add('show'), 10);
+        setTimeout(() => { n.classList.remove('show'); setTimeout(() => n.remove(), 400); }, 5000);
+      }
+
+      const $ = id => document.getElementById(id);
+      const LS = { get(k,d) { try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d} }, set(k,v) { try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} } };
+
+      // 🟢 ESCUCHAR CAMBIOS DE PEDIDOS EN TIEMPO REAL
+      const socket = io();
+      const lastOrder = LS.get('ja_last_order', null);
+      
+      if (lastOrder) {
+        socket.emit('unirseAlPedido', lastOrder);
+        socket.on('estadoCambiado', (info) => {
+          let mensaje = 'El estado de tu pedido cambió.';
+          if (info.status === 'confirmed') mensaje = '¡El dueño ha confirmado tu pago!';
+          if (info.status === 'shipped') mensaje = '¡Tu pedido está en camino!';
+          if (info.status === 'delivered') mensaje = '¡Tu pedido ha sido entregado!';
+          
+          showNotification('Actualización de Pedido', `${lastOrder}: ${mensaje}`, 'success');
+        });
+      }
+
+      function updateBadge() {
+        const cart = LS.get('ja_cart', []);
+        $('cartBadge').textContent = cart.reduce((s, i) => s + i.quantity, 0);
+      }
+
+      async function loadCategoriesMenu() {
+        try {
+          const res = await fetch('/api/categories');
+          const cats = await res.json();
+          const container = $('categoriesDropdownContent');
+          container.innerHTML = `<button class="category-item active" data-category="all"><i class="fas fa-th-large"></i> Todos los productos <i class="fas fa-check check" style="margin-left:auto"></i></button>`;
+          cats.forEach(c => {
+            container.insertAdjacentHTML('beforeend', `<button class="category-item" data-category="${c.slug}"><i class="fas fa-tag"></i> ${c.name}</button>`);
+          });
+
+          container.querySelectorAll('.category-item').forEach(item => {
+            item.addEventListener('click', function() {
+              container.querySelectorAll('.category-item').forEach(b => b.classList.remove('active'));
+              this.classList.add('active');
+              $('selectedCategoryText').textContent = this.textContent.trim();
+              $('categoriesDropdownContent').classList.remove('open');
+              $('dropdownArrow').classList.remove('open');
+              filterProducts(this.dataset.category);
+            });
+          });
+        } catch (e) {}
+      }
+
+      async function loadProducts() {
+        try {
+          const res = await fetch('/api/products', { cache: 'no-store' });
+          const products = await res.json();
+          const list = $('productList');
+          list.innerHTML = '';
+
+          products.forEach(p => {
+            let imgSrc = p.image ? (p.image.startsWith('/uploads') ? p.image : p.image) : 'default.png';
+            let stockClass = 'in-stock', stockText = `✅ En stock (${p.stock})`, btnDisabled = '', btnHtml = '<i class="fas fa-plus-circle"></i> Agregar';
+            if (p.stock <= 0) {
+              stockClass = 'out-of-stock'; stockText = '❌ Agotado'; btnDisabled = 'disabled'; btnHtml = 'Agotado';
+            } else if (p.stock === 1) {
+              stockClass = 'low-stock'; stockText = '🔥 ¡Última unidad!';
+            }
+
+            const html = `
+              <div class="product-card" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-stock="${p.stock}" data-category="${p.category}">
+                <img src="${imgSrc}" class="product-image" loading="lazy" onerror="this.src='https://via.placeholder.com/150?text=Sin+Foto'"/>
+                <div class="product-title">${p.name}</div>
+                <div class="product-descripcion">${p.description || ''}</div>
+                <div class="product-price">S/ ${Number(p.price).toFixed(2)}</div>
+                <div class="product-stock ${stockClass}">${stockText}</div>
+                <button class="btn-add" ${btnDisabled}>${btnHtml}</button>
+              </div>
+            `;
+            list.insertAdjacentHTML('beforeend', html);
+          });
+
+          document.querySelectorAll('.product-card .btn-add').forEach(btn => {
+            btn.addEventListener('click', function() {
+              if (this.disabled) return;
+              const card = this.closest('.product-card');
+              const pId = parseInt(card.dataset.id);
+              const pName = card.dataset.name;
+              const pPrice = parseFloat(card.dataset.price);
+              const pStock = parseInt(card.dataset.stock);
+
+              let cart = LS.get('ja_cart', []);
+              const ex = cart.find(i => i.id === pId);
+              if (ex) {
+                if (ex.quantity >= pStock) return alert('Solo hay ' + pStock + ' unidades disponibles.');
+                ex.quantity++;
+              } else {
+                cart.push({ id: pId, name: pName, price: pPrice, quantity: 1 });
+              }
+              LS.set('ja_cart', cart);
+              updateBadge();
+              showNotification('Producto Agregado', pName, 'success');
+            });
+          });
+
+        } catch (e) {}
+      }
+
+      function filterProducts(category) {
+        document.querySelectorAll('.product-card').forEach(p => {
+          if (category === 'all' || p.dataset.category === category) p.classList.remove('hidden');
+          else p.classList.add('hidden');
+        });
+      }
+
+      $('categoriesDropdownBtn').addEventListener('click', e => {
+        e.stopPropagation(); $('categoriesDropdownContent').classList.toggle('open'); $('dropdownArrow').classList.toggle('open');
+      });
+      document.addEventListener('click', e => {
+        if (!e.target.closest('.categories-dropdown')) { $('categoriesDropdownContent').classList.remove('open'); $('dropdownArrow').classList.remove('open'); }
+      });
+
+      $('cartIcon').addEventListener('click', () => window.location.href = 'carrito.html');
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+      updateBadge();
+      loadCategoriesMenu();
+      loadProducts();
+    })();
+  </script>
+</body>
+</html>

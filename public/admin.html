@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control - Motupe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+    body { background: #f4f6f8; color: #333; }
+    
+    /* LOGIN */
+    #loginScreen { display: flex; height: 100vh; align-items: center; justify-content: center; background: #f7f3ed; }
+    .login-box { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+    .login-box h1 { margin-bottom: 1.5rem; color: #4f3625; }
+    .login-box input { width: 100%; padding: 1rem; border: 1px solid #ccc; border-radius: 10px; margin-bottom: 1rem; font-size: 1rem; }
+    .login-box button { width: 100%; padding: 1rem; background: #4f3625; color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    
+    /* DASHBOARD */
+    #dashboard { display: none; }
+    header { background: #4f3625; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .logout-btn { background: transparent; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
+    
+    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 2rem; border-bottom: 2px solid #ddd; }
+    .tab { padding: 1rem 2rem; background: none; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; color: #777; border-bottom: 3px solid transparent; }
+    .tab.active { color: #4f3625; border-bottom-color: #4f3625; }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border-top: 4px solid #4f3625; }
+    .stat-card h3 { color: #777; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .stat-card p { font-size: 1.8rem; font-weight: bold; color: #4f3625; }
+
+    .card { background: white; border-radius: 15px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .order-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+    .b-pending { background: #fde9c8; color: #8a5a00; }
+    .b-confirmed { background: #d6f0dc; color: #1f6b36; }
+    .b-shipped { background: #d8e6f8; color: #1f4a8a; }
+    .b-delivered { background: #e6e0f5; color: #4b3a8a; }
+    .b-rejected { background: #f8d9d3; color: #a55233; }
+    
+    .actions { display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap; }
+    .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+    .btn:active { transform: scale(0.95); }
+    .btn-ok { background: #2e7d32; color: white; }
+    .btn-no { background: #d32f2f; color: white; }
+    .btn-neutral { background: #e0e0e0; color: #333; }
+    
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+    .prod-card { background: white; border-radius: 15px; padding: 1rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
+    .prod-img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem; background: #eee; }
+    .prod-title { font-weight: bold; margin-bottom: 0.2rem; }
+    .prod-price { color: #4f3625; font-size: 1.2rem; font-weight: bold; }
+    .prod-stock { font-size: 0.8rem; color: #777; margin-bottom: 0.5rem; }
+    .prod-actions { display: flex; gap: 5px; justify-content: center; margin-top: 10px; }
+    .prod-actions button { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 5px; border: none; cursor: pointer; }
+    
+    #productForm { display: none; background: white; padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-left: 5px solid #4f3625; }
+    #productForm input, #productForm textarea, #productForm select { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+    #productForm .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .cat-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
+    .cat-item { background: white; border: 1px solid #ddd; padding: 0.5rem 1rem; border-radius: 30px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .cat-item button { background: none; border: none; color: red; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: 0.2s; }
+    .cat-item button:hover { transform: scale(1.2); }
+
+    /* NOTIFICACIONES TOAST (ELEGANTES) */
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: white; border-radius: 12px; padding: 1rem 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; border-left: 5px solid #4f3625; animation: slideIn 0.3s ease forwards; transform: translateX(120%); opacity: 0; }
+    .toast.show { transform: translateX(0); opacity: 1; }
+    .toast.hide { animation: slideOut 0.3s ease forwards; }
+    @keyframes slideIn { to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { to { transform: translateX(120%); opacity: 0; } }
+    .toast.success { border-left-color: #2e7d32; }
+    .toast.error { border-left-color: #d32f2f; }
+    .toast.warning { border-left-color: #e67e22; }
+
+    /* MODAL DE CONFIRMACIÓN PERSONALIZADO */
+    #confirmModal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); z-index: 10000; display: none; align-items: center; justify-content: center; }
+    #confirmModal.open { display: flex; }
+    .confirm-box { background: white; padding: 2rem; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.2); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .confirm-box h3 { color: #4f3625; margin-bottom: 10px; font-size: 1.2rem; }
+    .confirm-box p { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+    
+    @media(max-width: 600px) { .tabs { flex-wrap: wrap; } .tab { flex: 1; padding: 1rem; } }
+  </style>
+</head>
+<body>
+
+  <!-- NOTIFICACIONES Y CONFIRMACIÓN -->
+  <div class="toast-container" id="toastContainer"></div>
+  
+  <div id="confirmModal">
+    <div class="confirm-box">
+      <h3 id="confirmTitle">¿Estás seguro?</h3>
+      <p id="confirmText">Esta acción no se puede deshacer.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-neutral" onclick="closeConfirm(false)">Cancelar</button>
+        <button class="btn btn-no" onclick="closeConfirm(true)">Sí, borrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loginScreen">
+    <div class="login-box">
+      <h1>🔐 Acceso Dueño</h1>
+      <input type="password" id="passInput" placeholder="Contraseña" autocomplete="off">
+      <button onclick="login()">Entrar al Panel</button>
+      <p id="loginError" style="color:red; font-size:0.85rem; margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <div id="dashboard">
+    <header>
+      <h2>Panel de Control</h2>
+      <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+    </header>
+
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(event, 'orders')">📦 Pedidos</button>
+        <button class="tab" onclick="switchTab(event, 'products')">🛒 Productos</button>
+        <button class="tab" onclick="switchTab(event, 'categories')">📁 Categorías</button>
+      </div>
+
+      <div id="tab-orders" class="tab-content active">
+        <div class="stats" id="statsContainer"></div>
+        <div id="ordersList"></div>
+      </div>
+
+      <div id="tab-products" class="tab-content">
+        <button class="btn btn-ok" style="margin-bottom: 1.5rem;" onclick="openForm()"><i class="fas fa-plus"></i> Añadir Nuevo Producto</button>
+        
+        <div id="productForm">
+          <input type="hidden" id="pId">
+          <div class="form-row">
+            <div><label>Nombre</label><input type="text" id="pName"></div>
+            <div>
+              <label>Categoría</label>
+              <select id="pCategory"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div><label>Precio (S/)</label><input type="number" id="pPrice" step="0.10"></div>
+            <div><label>Stock (Cantidad)</label><input type="number" id="pStock"></div>
+          </div>
+          <label>Descripción</label><textarea id="pDesc" rows="2"></textarea>
+          <label>Imagen (Opcional)</label><input type="file" id="pImage" accept="image/*">
+          <div style="margin-top: 1rem;">
+            <button class="btn btn-ok" onclick="saveProduct()">Guardar</button>
+            <button class="btn btn-neutral" onclick="closeForm()">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="product-grid" id="productsList"></div>
+      </div>
+
+      <div id="tab-categories" class="tab-content">
+        <div class="card">
+          <h3>Crear Nueva Categoría</h3>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <input type="text" id="newCatName" placeholder="Ej: Bebidas, Ropa, Ferretería..." style="flex:1; padding:0.8rem; border:1px solid #ddd; border-radius:8px;">
+            <button class="btn btn-ok" onclick="addCategory()">Agregar</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Categorías Existentes</h3>
+          <div class="cat-list" id="categoriesList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let adminToken = sessionStorage.getItem('adminToken');
+    const API = '/api/admin';
+    let globalCategories = [];
+
+    // ==========================================
+    // SISTEMA DE NOTIFICACIONES Y CONFIRMACIÓN
+    // ==========================================
+    function showToast(title, msg, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icons = { success: '✅', error: '❌', warning: '⚠️' };
+      toast.innerHTML = `<span style="font-size:1.5rem">${icons[type]}</span><div><b>${title}</b><br><small>${msg}</small></div>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    let confirmResolver = null;
+    function customConfirm(title, text) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmText').textContent = text;
+      document.getElementById('confirmModal').classList.add('open');
+      return new Promise((resolve) => { confirmResolver = resolve; });
+    }
+    function closeConfirm(result) {
+      document.getElementById('confirmModal').classList.remove('open');
+      if (confirmResolver) { confirmResolver(result); confirmResolver = null; }
+    }
+
+    // ==========================================
+    // LOGIN Y NAVEGACIÓN
+    // ==========================================
+    async function login() {
+      const password = document.getElementById('passInput').value;
+      const res = await fetch(`${API}/login`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        adminToken = data.token;
+        sessionStorage.setItem('adminToken', adminToken);
+        initDashboard();
+      } else {
+        document.getElementById('loginError').textContent = 'Contraseña incorrecta';
+      }
+    }
+    document.getElementById('passInput').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+    function logout() { sessionStorage.removeItem('adminToken'); location.reload(); }
+    function getHeaders() { return { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' }; }
+
+    if (adminToken) initDashboard();
+
+    async function initDashboard() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await loadCategories();
+      loadOrders();
+      loadProducts();
+    }
+
+    function switchTab(event, tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    // ==========================================
+    // CATEGORÍAS
+    // ==========================================
+    async function loadCategories() {
+      const res = await fetch(`${API}/categories`, { headers: getHeaders() });
+      if (res.status === 401) return logout();
+      globalCategories = await res.json();
+
+      const select = document.getElementById('pCategory');
+      select.innerHTML = globalCategories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+
+      document.getElementById('categoriesList').innerHTML = globalCategories.map(c => `
+        <div class="cat-item">
+          <span><b>${c.name}</b> <small style="color:#999">(${c.slug})</small></span>
+          <button onclick="deleteCategory(${c.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      `).join('');
+    }
+
+    async function addCategory() {
+      const name = document.getElementById('newCatName').value;
+      if (!name) return showToast('Falta el nombre', 'Escribe un nombre para la categoría.', 'warning'); // Reemplaza el alert feo
+      
+      const res = await fetch(`${API}/categories`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ name }) });
+      if (res.ok) {
+        document.getElementById('newCatName').value = '';
+        showToast('Categoría creada', name);
+        await loadCategories();
+      } else {
+        const err = await res.json(); showToast('Error', err.error, 'error');
+      }
+    }
+
+    async function deleteCategory(id) {
+      const confirmado = await customConfirm('¿Borrar categoría?', 'Los productos con esta categoría se quedarán sin filtro.'); // Reemplaza el confirm feo
+      if (!confirmado) return;
+
+      await fetch(`${API}/categories/${id}`, { method: 'DELETE', headers: getHeaders() });
+      showToast('Eliminada', 'La categoría ha sido borrada.');
+      await loadCategories();
+    }
+
+    // ==========================================
+    // PEDIDOS
+    // ==========================================
+    async function loadOrders() {
+      const res = await fetch(`${API}/orders`, { headers: getHeaders() });
+      if (res.status === 401) return logout();
+      const orders = await res.json();
+      
+      let pendientes = orders.filter(o => o.status === 'pending').length;
+      let ventas = orders.filter(o => ['confirmed', 'shipped', 'delivered'].includes(o.status)).reduce((s, o) => s + o.total, 0);
+      
+      document.getElementById('statsContainer').innerHTML = `
+        <div class="stat-card"><h3>Pendientes</h3><p>${pendientes}</p></div>
+        <div class="stat-card"><h3>Ventas Totales</h3><p>S/ ${ventas.toFixed(2)}</p></div>
+        <div class="stat-card"><h3>Pedidos Históricos</h3><p>${orders.length}</p></div>
+      `;
+
+      const STATUS = { pending: 'Pendiente', confirmed: 'Confirmado', shipped: 'Enviado', delivered: 'Entregado', rejected: 'Rechazado' };
+      const actionsMap = {
+        pending: [['confirmed', 'Confirmar', 'btn-ok'], ['rejected', 'Rechazar', 'btn-no']],
+        confirmed: [['shipped', 'Marcar Enviado', 'btn-ok']],
+        shipped: [['delivered', 'Marcar Entregado', 'btn-ok']]
+      };
+
+      document.getElementById('ordersList').innerHTML = orders.map(o => {
+        const acts = actionsMap[o.status] || [];
+        const btns = acts.map(a => `<button class="btn ${a[2]}" onclick="updateOrder('${o.code}', '${a[0]}')">${a[1]}</button>`).join('');
+        const proof = o.proof_path ? `<a href="${o.proof_path}" target="_blank" style="color:#4f3625; text-decoration:underline; display:block; margin-top:5px;">📎 Ver comprobante</a>` : '⚠️ Sin comprobante';
+        
+        return `
+          <div class="card">
+            <div class="order-head">
+              <strong>${o.code}</strong>
+              <span class="badge b-${o.status}">${STATUS[o.status]}</span>
+            </div>
+            <div style="font-size: 0.9rem; line-height: 1.6;">
+              <div>👤 ${o.customer_name} · 📞 ${o.customer_phone}</div>
+              <div>📍 ${o.customer_address} (${o.customer_ref || 'Sin ref'})</div>
+              <div>💳 ${o.method} - Titular: ${o.titular}</div>
+              <div style="margin-top: 8px; font-size: 1.1rem; font-weight: bold; color: #4f3625;">Total: S/ ${o.total.toFixed(2)}</div>
+              <div>${proof}</div>
+            </div>
+            <div class="actions">${btns}</div>
+          </div>
+        `;
+      }).join('') || '<p>No hay pedidos aún.</p>';
+    }
+
+    async function updateOrder(code, status) {
+      await fetch(`${API}/orders/${code}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status }) });
+      showToast('Actualizado', `Pedido ${code} cambiado a ${status}`);
+      loadOrders();
+    }
+
+    // ==========================================
+    // PRODUCTOS
+    // ==========================================
+    async function loadProducts() {
+      const res = await fetch(`${API}/products`, { headers: getHeaders() });
+      if (res.status === 401) return logout();
+      const products = await res.json();
+
+      document.getElementById('productsList').innerHTML = products.map(p => `
+        <div class="prod-card">
+          <img src="${p.image || 'default.png'}" class="prod-img" onerror="this.src='https://via.placeholder.com/100?text=Sin+Foto'">
+          <div class="prod-title">${p.name}</div>
+          <div class="prod-price">S/ ${p.price.toFixed(2)}</div>
+          <div class="prod-stock">Stock: ${p.stock} unidades</div>
+          <div class="prod-actions">
+            <button style="background:#e0e0e0;" onclick='editProduct(${JSON.stringify(p)})'>Editar</button>
+            <button style="background:#ffcccc; color:red;" onclick="deleteProduct(${p.id})">Borrar</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    let base64Image = '';
+
+    function openForm() {
+      document.getElementById('productForm').style.display = 'block';
+      document.getElementById('pId').value = '';
+      document.getElementById('pName').value = '';
+      document.getElementById('pCategory').selectedIndex = 0;
+      document.getElementById('pPrice').value = '';
+      document.getElementById('pStock').value = '';
+      document.getElementById('pDesc').value = '';
+      document.getElementById('pImage').value = '';
+      base64Image = '';
+    }
+    function closeForm() { document.getElementById('productForm').style.display = 'none'; }
+
+    document.getElementById('pImage').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => base64Image = ev.target.result;
+      reader.readAsDataURL(file);
+    });
+
+    function editProduct(p) {
+      document.getElementById('productForm').style.display = 'block';
+      document.getElementById('pId').value = p.id;
+      document.getElementById('pName').value = p.name;
+      
+      const catSelect = document.getElementById('pCategory');
+      let catExists = Array.from(catSelect.options).some(opt => opt.value === p.category);
+      if (!catExists && p.category) {
+        const newOpt = new Option(p.category, p.category);
+        catSelect.add(newOpt);
+      }
+      catSelect.value = p.category || 'otros';
+
+      document.getElementById('pPrice').value = p.price;
+      document.getElementById('pStock').value = p.stock;
+      document.getElementById('pDesc').value = p.description;
+      document.getElementById('pImage').value = '';
+      base64Image = '';
+      window.scrollTo(0,0);
+    }
+
+    async function saveProduct() {
+      const id = document.getElementById('pId').value;
+      const data = {
+        name: document.getElementById('pName').value,
+        category: document.getElementById('pCategory').value,
+        price: parseFloat(document.getElementById('pPrice').value),
+        stock: parseInt(document.getElementById('pStock').value),
+        description: document.getElementById('pDesc').value,
+        image: base64Image || null
+      };
+
+      if(!data.name || isNaN(data.price) || isNaN(data.stock)) return showToast('Faltan datos', 'Completa nombre, precio y stock.', 'warning');
+
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `${API}/products/${id}` : `${API}/products`;
+
+      await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(data) });
+      showToast('Guardado', 'El producto se ha guardado correctamente.');
+      closeForm();
+      loadProducts();
+    }
+
+    async function deleteProduct(id) {
+      const confirmado = await customConfirm('¿Borrar producto?', 'Este producto desaparecerá de la tienda pública permanentemente.');
+      if (!confirmado) return;
+
+      await fetch(`${API}/products/${id}`, { method: 'DELETE', headers: getHeaders() });
+      showToast('Eliminado', 'El producto ha sido borrado.');
+      loadProducts();
+    }
+  </script>
+</body>
+</html>

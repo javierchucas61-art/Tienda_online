@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes" />
+  <title>Tu Carrito · Motupe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #f7f3ed; color: #2d2a24; padding: 0.8rem; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { max-width: 800px; width: 100%; margin: 0 auto; }
+    
+    .header-simple { display: flex; align-items: center; margin-bottom: 1.5rem; gap: 15px; }
+    .btn-back { font-size: 1.5rem; color: #4f3625; background: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header-simple h1 { font-size: 1.5rem; color: #4a3729; }
+    
+    .cart-list { background: white; border-radius: 20px; padding: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .cart-item { display: flex; align-items: center; gap: 15px; padding: 1rem 0; border-bottom: 1px solid #eee; }
+    .cart-item:last-child { border-bottom: none; }
+    .item-info { flex: 1; }
+    .item-title { font-weight: 600; font-size: 1.05rem; }
+    .item-price { color: #777; font-size: 0.9rem; }
+    .item-subtotal { font-weight: bold; color: #4f3625; font-size: 1.1rem; margin-top: 4px; }
+    
+    .qty-control { display: flex; align-items: center; background: #f3ebe3; border-radius: 30px; border: 1px solid #dccfc2; padding: 4px; }
+    .qty-control button { width: 32px; height: 32px; border-radius: 50%; border: none; background: white; color: #4f3625; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .qty-control button:active { transform: scale(0.9); }
+    .qty-control span { min-width: 30px; text-align: center; font-weight: bold; }
+    .btn-delete { background: none; border: none; color: #d32f2f; font-size: 1.2rem; cursor: pointer; padding: 8px; }
+    
+    .totals-card { background: white; border-radius: 20px; padding: 1.5rem; margin-top: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; color: #777; }
+    .total-main { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #eee; font-size: 1.4rem; font-weight: bold; color: #4f3625; }
+    
+    .btn-continue { display: flex; align-items: center; justify-content: center; width: 100%; background: #4f3625; color: white; padding: 1rem; border: none; border-radius: 60px; font-size: 1.1rem; font-weight: bold; text-decoration: none; margin-top: 1.5rem; cursor: pointer; transition: 0.2s; }
+    .btn-continue:hover { background: #2f1f13; transform: scale(1.02); }
+    .btn-continue:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+    
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #777; }
+    .empty-state i { font-size: 3rem; color: #dccfc2; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-simple">
+      <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i></a>
+      <h1>Tu Carrito</h1>
+    </div>
+
+    <div id="cartContainer">
+      <!-- Se llena con JS -->
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const LS = { get(k,d) { try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d} }, set(k,v) { try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} } };
+    const money = n => 'S/ ' + Number(n).toFixed(2);
+    
+    let cart = LS.get('ja_cart', []);
+
+    function renderCart() {
+      LS.set('ja_cart', cart);
+      const container = $('cartContainer');
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-shopping-basket"></i>
+            <h2>Tu carrito está vacío</h2>
+            <p style="margin-top:10px; margin-bottom: 20px;">Agrega productos desde la tienda para continuar.</p>
+            <a href="index.html" class="btn-continue" style="max-width:300px; margin: 0 auto;">Ir a la tienda</a>
+          </div>
+        `;
+        return;
+      }
+
+      let total = 0;
+      const html = cart.map(i => {
+        total += i.price * i.quantity;
+        return `
+          <div class="cart-item">
+            <div class="item-info">
+              <div class="item-title">${i.name}</div>
+              <div class="item-price">${money(i.price)} c/u</div>
+              <div class="item-subtotal">${money(i.price * i.quantity)}</div>
+            </div>
+            <div class="qty-control">
+              <button onclick="changeQty(${i.id}, -1)">−</button>
+              <span>${i.quantity}</span>
+              <button onclick="changeQty(${i.id}, 1)">+</button>
+            </div>
+            <button class="btn-delete" onclick="removeItem(${i.id})"><i class="fas fa-trash"></i></button>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="cart-list">${html}</div>
+        <div class="totals-card">
+          <div class="total-row"><span>Subtotal</span><span>${money(total)}</span></div>
+          <div class="total-row"><span>Envío</span><span>A coordinar</span></div>
+          <div class="total-main"><span>Total</span><span>${money(total)}</span></div>
+        </div>
+        <button class="btn-continue" onclick="goToCheckout()">Continuar con la entrega <i class="fas fa-arrow-right" style="margin-left:10px"></i></button>
+      `;
+    }
+
+    window.changeQty = (id, d) => {
+      const item = cart.find(i => i.id === id);
+      if (!item) return;
+      
+      // Obtener stock real desde el DOM o hacer fetch (por simplicidad usamos el carrito)
+      // En una app muy estricta se valida contra el servidor, pero aquí validamos > 0.
+      const newQty = item.quantity + d;
+      if (newQty <= 0) return removeItem(id);
+      
+      item.quantity = newQty;
+      renderCart();
+    };
+
+    window.removeItem = id => {
+      cart = cart.filter(i => i.id !== id);
+      renderCart();
+    };
+
+    window.goToCheckout = () => {
+      if (cart.length > 0) window.location.href = 'pago.html';
+    };
+
+    renderCart();
+  </script>
+</body>
+</html>

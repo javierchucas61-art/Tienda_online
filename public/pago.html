@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes" />
+  <title>Pago · Motupe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #f7f3ed; color: #2d2a24; padding: 0.8rem; padding-bottom: 100px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    
+    .header-simple { display: flex; align-items: center; margin-bottom: 1.5rem; gap: 15px; }
+    .btn-back { font-size: 1.5rem; color: #4f3625; background: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header-simple h1 { font-size: 1.5rem; color: #4a3729; }
+    
+    .card { background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .card h2 { font-size: 1.1rem; color: #4f3625; margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+    
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 0.85rem; font-weight: 600; color: #555; margin-bottom: 0.4rem; }
+    .field input, .field textarea {
+      width: 100%; padding: 0.8rem 1rem; border: 1px solid #dccfc2; border-radius: 12px; font-size: 1rem; background: #faf8f5;
+      transition: all 0.2s; outline: none; font-family: inherit;
+    }
+    .field input:focus, .field textarea:focus { border-color: #4f3625; background: white; box-shadow: 0 0 0 3px rgba(79, 54, 37, 0.1); }
+    .field.err input { border-color: #d32f2f; background: #fff5f5; }
+    .field .msg { display: none; color: #d32f2f; font-size: 0.75rem; margin-top: 4px; }
+    .field.err .msg { display: block; }
+    
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    
+    .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+    .pay-btn { background: #faf8f5; border: 2px solid #dccfc2; border-radius: 12px; padding: 1rem; cursor: pointer; text-align: center; transition: 0.2s; font-weight: bold; font-size: 1rem; color: #555; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .pay-btn i { font-size: 1.5rem; }
+    .pay-btn.selected { border-color: #4f3625; background: #fff; color: #4f3625; box-shadow: 0 4px 10px rgba(79,54,37,0.1); }
+    
+    .qr-box { display: none; background: #faf8f5; border-radius: 12px; padding: 1.5rem; text-align: center; border: 1px dashed #dccfc2; margin-top: 1rem; }
+    .qr-box.active { display: block; }
+    .qr-box img { width: 200px; height: 200px; object-fit: contain; border-radius: 12px; margin-bottom: 1rem; background: white; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .number-box { background: white; border: 1px solid #dccfc2; border-radius: 8px; padding: 0.8rem; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 1rem; }
+    .btn-copy { background: #4f3625; color: white; border: none; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; }
+    
+    .upload-area { display: flex; gap: 10px; margin-top: 0.5rem; }
+    .upload-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 1rem; border: 2px dashed #dccfc2; border-radius: 12px; background: #faf8f5; color: #777; cursor: pointer; transition: 0.2s; font-weight: 600; font-size: 0.85rem; }
+    .upload-btn:hover { border-color: #4f3625; color: #4f3625; background: #fff; }
+    .upload-btn i { font-size: 1.5rem; }
+    .preview-img { width: 100%; max-height: 150px; object-fit: contain; border-radius: 8px; margin-top: 10px; display: none; border: 1px solid #eee; }
+    .preview-img.active { display: block; }
+    
+    .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); padding: 1rem; z-index: 100; }
+    .bottom-bar-inner { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .total-text { font-size: 0.9rem; color: #777; }
+    .total-amount { font-size: 1.4rem; font-weight: 800; color: #4f3625; }
+    .btn-submit { background: #4f3625; color: white; border: none; border-radius: 60px; padding: 1rem 2rem; font-size: 1rem; font-weight: bold; cursor: pointer; flex: 1; max-width: 300px; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn-submit:hover { background: #2f1f13; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+    
+    #successModal { position: fixed; inset: 0; background: rgba(30, 22, 16, 0.9); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+    #successModal.open { display: flex; }
+    .success-box { background: white; border-radius: 24px; padding: 2rem; text-align: center; max-width: 400px; width: 100%; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .success-icon { width: 80px; height: 80px; background: #e8f5e9; color: #2e7d32; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto 1rem; transition: 0.3s; }
+    .success-box h2 { color: #4f3625; margin-bottom: 0.5rem; }
+    .success-box p { color: #777; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    .code-box { background: #faf8f5; border: 2px dashed #4f3625; padding: 1rem; border-radius: 12px; font-size: 1.5rem; font-weight: 800; color: #4f3625; letter-spacing: 2px; margin-bottom: 1.5rem; }
+    .btn-whatsapp { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: #25d366; color: white; padding: 1rem; border: none; border-radius: 60px; font-size: 1rem; font-weight: bold; text-decoration: none; margin-bottom: 10px; }
+
+    .notification-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; max-width: 350px; width: 100%; pointer-events: none; }
+    .notification { background: white; border-radius: 16px; padding: 1rem 1.2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: flex; gap: 12px; border-left: 5px solid #4f3625; transform: translateX(120%); opacity: 0; transition: all 0.4s; pointer-events: auto; }
+    .notification.show { transform: translateX(0); opacity: 1; }
+    .notification.success { border-left-color: #2e7d32; }
+    .notification.error { border-left-color: #d32f2f; }
+    .notification.warning { border-left-color: #e67e22; }
+
+    @media(max-width: 600px) { .row-2 { grid-template-columns: 1fr; } .notification-container { top: 10px; right: 10px; left: 10px; max-width: none; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-simple">
+      <a href="carrito.html" class="btn-back"><i class="fas fa-arrow-left"></i></a>
+      <h1>Datos de Entrega</h1>
+    </div>
+
+    <div class="card">
+      <h2><i class="fas fa-user"></i> ¿A dónde lo enviamos?</h2>
+      <div class="field" id="f-nombre">
+        <label>Nombre completo</label>
+        <input type="text" id="cNombre" placeholder="Ej: Juan Pérez">
+        <div class="msg">Escribe tu nombre real.</div>
+      </div>
+      <div class="row-2">
+        <div class="field" id="f-tel">
+          <label>Celular / WhatsApp</label>
+          <input type="tel" id="cTel" placeholder="9XX XXX XXX">
+          <div class="msg">Ingresa 9 dígitos válidos.</div>
+        </div>
+        <div class="field">
+          <label>Correo electrónico (Para avisos)</label>
+          <input type="email" id="cEmail" placeholder="tucorreo@gmail.com">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field" id="f-dir">
+          <label>Dirección</label>
+          <input type="text" id="cDir" placeholder="Calle, número, sector">
+          <div class="msg">Indica tu dirección.</div>
+        </div>
+        <div class="field">
+          <label>Referencia (Opcional)</label>
+          <input type="text" id="cRef" placeholder="Frente al parque...">
+        </div>
+      </div>
+      <div class="field">
+        <label>Nota para el pedido (Opcional)</label>
+        <textarea id="cNota" rows="2" placeholder="Ej: Tocar el timbre 2 veces"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><i class="fas fa-wallet"></i> Método de Pago</h2>
+      <div class="payment-options">
+        <button class="pay-btn" id="btnYape" onclick="selectPay('Yape')"><i class="fas fa-mobile-alt"></i> Yape</button>
+        <button class="pay-btn" id="btnPlin" onclick="selectPay('Plin')"><i class="fas fa-mobile-alt"></i> Plin</button>
+      </div>
+      
+      <div class="qr-box" id="qrBox">
+        <p style="margin-bottom:10px; font-weight:bold; color:#4f3625;">Escanea el QR o usa el número:</p>
+        <img id="qrImg" src="" alt="QR de pago">
+        <div class="number-box">
+          <span id="numText">--</span>
+          <button class="btn-copy" onclick="copyNumber()">Copiar</button>
+        </div>
+        <div class="field" style="text-align:left;">
+          <label>Nombre con el que pagas (Titular)</label>
+          <input type="text" id="cTitular" placeholder="Nombre en tu app de Yape/Plin">
+          <div class="msg">Escribe el nombre del que envía el pago.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="cardProof" style="display:none;">
+      <h2><i class="fas fa-camera"></i> Sube tu comprobante</h2>
+      <p style="font-size:0.85rem; color:#777; margin-bottom:1rem;">Sube una captura de pantalla del pago para verificarlo.</p>
+      <div class="upload-area">
+        <label class="upload-btn" for="proofGallery"><i class="fas fa-images"></i> Galería</label>
+        <label class="upload-btn" for="proofCamera"><i class="fas fa-camera"></i> Cámara</label>
+      </div>
+      <input type="file" id="proofGallery" accept="image/*" style="display:none">
+      <input type="file" id="proofCamera" accept="image/*" capture="environment" style="display:none">
+      <img id="preview" class="preview-img">
+      <p id="proofStatus" style="color:#2e7d32; font-size:0.9rem; font-weight:bold; margin-top:10px; display:none;"><i class="fas fa-check-circle"></i> Imagen lista</p>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="bottom-bar-inner">
+      <div>
+        <div class="total-text">Total a pagar</div>
+        <div class="total-amount" id="totalDisplay">S/ 0.00</div>
+      </div>
+      <button class="btn-submit" id="sendBtn" onclick="processOrder()" disabled><i class="fab fa-whatsapp"></i> Pagar y Enviar</button>
+    </div>
+  </div>
+
+  <div id="successModal">
+    <div class="success-box">
+      <div class="success-icon" id="successIcon"><i class="fas fa-check"></i></div>
+      <h2 id="successTitle">¡Pedido Recibido!</h2>
+      <p id="successMsg">Tu pago está siendo verificado. Pronto te contactaremos.</p>
+      <div class="code-box" id="successCode">JA-XXXX</div>
+      <a href="#" id="waLink" class="btn-whatsapp" target="_blank"><i class="fab fa-whatsapp"></i> Enviar comprobante</a>
+      <a href="index.html" style="color:#4f3625; font-size:0.9rem; text-decoration:none; font-weight:bold;">Volver a la tienda</a>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <script>
+    const STORE = { name: 'Tienda Motupe', phone: '51904015078', yapeNumber: '51 904 015 078', plinNumber: '51 992 987 826' };
+    const $ = id => document.getElementById(id);
+    const LS = { get(k,d) { try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d} }, set(k,v) { try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} } };
+    const money = n => 'S/ ' + Number(n).toFixed(2);
+    
+    const socket = io();
+    
+    let cart = LS.get('ja_cart', []);
+    let draft = null;
+    let selectedPay = '';
+    let proofFile = null;
+
+    function showNotification(title, msg, type = 'info', duration = 4000) {
+      let c = document.getElementById('noti-container');
+      if (!c) { c = document.createElement('div'); c.id = 'noti-container'; c.className = 'notification-container'; document.body.appendChild(c); }
+      const n = document.createElement('div'); n.className = 'notification ' + type;
+      const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      n.innerHTML = `<span style="font-size:1.5rem">${icons[type]||'ℹ️'}</span><div><b style="font-size:.9rem">${title}</b><br><span style="font-size:.85rem;color:#555">${msg}</span></div>`;
+      c.appendChild(n); setTimeout(() => n.classList.add('show'), 10);
+      setTimeout(() => { n.classList.remove('show'); setTimeout(() => n.remove(), 400); }, duration);
+    }
+
+    if (cart.length === 0) {
+      showNotification('Carrito vacío', 'Agrega productos antes de pagar.', 'warning');
+      setTimeout(() => window.location.href = 'carrito.html', 2500);
+    }
+
+    async function init() {
+      if (cart.length === 0) return;
+      const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+      $('totalDisplay').textContent = money(sub);
+      try {
+        const r = await fetch('/api/orders/quote', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: cart.map(i => ({ id: i.id, quantity: i.quantity })) })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error);
+        draft = data;
+        $('totalDisplay').textContent = money(draft.total); 
+      } catch (e) {
+        showNotification('Error de stock', e.message, 'error');
+        setTimeout(() => window.location.href = 'carrito.html', 3000);
+      }
+    }
+
+    window.selectPay = (method) => {
+      selectedPay = method;
+      $('btnYape').classList.toggle('selected', method === 'Yape');
+      $('btnPlin').classList.toggle('selected', method === 'Plin');
+      $('qrBox').classList.add('active');
+      $('qrImg').src = method === 'Yape' ? 'yape_qr_2026-09-01T11-07-34.png' : 'QR_Interbank_1788360006678.png';
+      $('numText').textContent = method === 'Yape' ? STORE.yapeNumber : STORE.plinNumber;
+      $('cardProof').style.display = 'block';
+      checkForm();
+    };
+
+    window.copyNumber = () => {
+      navigator.clipboard.writeText($('numText').textContent.replace(/\s/g,''));
+      showNotification('Copiado', 'Número copiado al portapapeles', 'success');
+    };
+
+    function handleImage(e) {
+      const f = e.target.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          const scale = Math.min(1, 1200 / Math.max(img.width, img.height));
+          c.width = img.width * scale; c.height = img.height * scale;
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          c.toBlob(b => {
+            proofFile = new File([b], 'proof.jpg', { type: 'image/jpeg' });
+            $('preview').src = URL.createObjectURL(proofFile);
+            $('preview').classList.add('active');
+            $('proofStatus').style.display = 'block';
+            checkForm();
+          }, 'image/jpeg', 0.8);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(f);
+    }
+    $('proofGallery').addEventListener('change', handleImage);
+    $('proofCamera').addEventListener('change', handleImage);
+
+    function checkForm() {
+      const name = $('cNombre').value.trim();
+      const tel = $('cTel').value.replace(/\D/g, '');
+      const dir = $('cDir').value.trim();
+      const titular = $('cTitular').value.trim();
+      const isName = name.length >= 3;
+      const isTel = tel.length === 9 && tel.startsWith('9');
+      const isDir = dir.length >= 6;
+      $('f-nombre').classList.toggle('err', !isName && name !== '');
+      $('f-tel').classList.toggle('err', !isTel && tel !== '');
+      $('f-dir').classList.toggle('err', !isDir && dir !== '');
+      const ready = isName && isTel && isDir && selectedPay && titular.length >= 3 && proofFile;
+      $('sendBtn').disabled = !ready;
+    }
+
+    ['cNombre', 'cTel', 'cDir', 'cTitular'].forEach(id => $(id).addEventListener('input', checkForm));
+
+    window.processOrder = async () => {
+      $('sendBtn').disabled = true;
+      $('sendBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+      try {
+        const getBase64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+        const proofBase64 = await getBase64(proofFile);
+
+        const res = await fetch('/api/orders', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: draft.code,
+            items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
+            customer: { 
+              name: $('cNombre').value.trim(), 
+              phone: $('cTel').value.replace(/\D/g,''), 
+              email: $('cEmail').value.trim(),
+              address: $('cDir').value.trim(), 
+              ref: $('cRef').value.trim(), 
+              note: $('cNota').value.trim() 
+            },
+            method: selectedPay, titular: $('cTitular').value.trim(), proof: proofBase64
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        LS.set('ja_cart', []); 
+        LS.set('ja_last_order', data.code); // 🟢 GUARDAMOS EL CÓDIGO PARA QUE INDEX.HTML LO ESCUCHE
+        $('successCode').textContent = data.code;
+        
+        const waText = `Hola, acabo de hacer el pedido *${data.code}* por un total de *${money(data.total)}*. Aquí adjunto mi comprobante de ${selectedPay}.`;
+        $('waLink').href = `https://wa.me/${STORE.phone}?text=${encodeURIComponent(waText)}`;
+        
+        $('successModal').classList.add('open');
+
+        socket.emit('unirseAlPedido', data.code);
+        socket.on('estadoCambiado', (info) => {
+          let mensaje = 'El estado de tu pedido ha cambiado.';
+          if (info.status === 'confirmed') mensaje = '✅ ¡El dueño ha confirmado tu pago!';
+          if (info.status === 'shipped') mensaje = '🛵 ¡Tu pedido está en camino!';
+          if (info.status === 'delivered') mensaje = '📦 ¡Tu pedido ha sido entregado!';
+          if (info.status === 'rejected') mensaje = '❌ Hubo un problema con tu pago.';
+          
+          showNotification('Actualización de Pedido', mensaje, info.status === 'rejected' ? 'error' : 'success');
+          
+          if(info.status === 'confirmed'){
+            $('successTitle').textContent = "¡Pago Verificado!";
+            $('successMsg').innerHTML = "¡El dueño ya está preparando tu pedido!";
+            $('successIcon').style.background = "#d6f0dc";
+            $('successIcon').style.color = "#1f6b36";
+          }
+        });
+      } catch (e) {
+        showNotification('Error', e.message, 'error');
+        $('sendBtn').disabled = false;
+        $('sendBtn').innerHTML = '<i class="fab fa-whatsapp"></i> Pagar y Enviar';
+      }
+    };
+
+    init();
+  </script>
+</body>
+</html>
