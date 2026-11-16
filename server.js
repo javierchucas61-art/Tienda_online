@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,30 +13,15 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'cambiar-clave';
-
-// 🟢 NUEVO: Ruta dinámica para guardar datos (Local o en la Nube)
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const UPLOADS = path.join(DATA_DIR, 'uploads');
 
 if (!fs.existsSync(UPLOADS)) fs.mkdirSync(UPLOADS, { recursive: true });
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS));
 
-// ---------- CONFIGURACIÓN DE CORREO (BREVO) ----------
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
 // ---------- DB ----------
-// 🟢 CAMBIO: Usa DATA_DIR en lugar de __dirname
 const db = new Database(path.join(DATA_DIR, 'store.db'));
 db.pragma('journal_mode = WAL');
 db.exec(`
@@ -80,8 +64,9 @@ function generateCode() {
   throw new Error('No se pudo generar código');
 }
 
+// 🟢 NUEVA FUNCIÓN DE CORREO USANDO API HTTP (Sin SMTP)
 async function sendEmailNotification(order, newStatus) {
-  if (!order.customer_email || !process.env.EMAIL_USER) return;
+  if (!order.customer_email || !process.env.BREVO_API_KEY) return;
 
   const statusText = {
     confirmed: '✅ Pago Confirmado',
@@ -105,13 +90,11 @@ async function sendEmailNotification(order, newStatus) {
         <h2 style="color: ${color}; margin-top: 0;">${statusText}</h2>
         <p style="color: #555; font-size: 16px;">Hola <b>${order.customer_name}</b>,</p>
         <p style="color: #555; font-size: 16px;">${mensaje}</p>
-        
         <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #b48b6f;">
           <p style="margin: 0; color: #777;">Código de Pedido:</p>
           <h3 style="margin: 5px 0 0 0; color: #4f3625; font-size: 20px;">${order.code}</h3>
           <p style="margin: 5px 0 0 0; color: #777;">Total: <b>S/ ${order.total.toFixed(2)}</b></p>
         </div>
-
         <p style="color: #555; font-size: 14px;">Si tienes alguna duda, puedes responder a este correo o escribirnos al WhatsApp.</p>
       </div>
       <div style="background: #ede3d9; padding: 15px; text-align: center; color: #777; font-size: 12px;">
@@ -121,15 +104,29 @@ async function sendEmailNotification(order, newStatus) {
   `;
 
   try {
-    await transporter.sendMail({
-      from: `"Motupe Delivery" <javierchucas61@gmail.com>`,
-      to: order.customer_email,
-      subject: `${statusText} - Pedido ${order.code}`,
-      html: html
+    // Usamos fetch nativo de Node.js para llamar a la API de Brevo
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'Motupe Delivery', email: 'javierchucas61@gmail.com' },
+        to: [{ email: order.customer_email }],
+        subject: `${statusText} - Pedido ${order.code}`,
+        htmlContent: html
+      })
     });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Error en la API de Brevo');
+    }
     console.log(`📧 Correo enviado a ${order.customer_email} sobre el estado: ${newStatus}`);
   } catch (error) {
-    console.error('❌ Error al enviar correo:', error.message);
+    console.error('❌ Error al enviar correo (API):', error.message);
   }
 }
 
